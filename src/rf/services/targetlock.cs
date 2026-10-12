@@ -69,9 +69,13 @@ public struct LockTarget
         {
             if (Actor != null)
             {
-                return Actor.aiControlled ? "Enemy" : "Player";
+                return Actor.aiControlled ? "Ped Enemy" : "Ped Player";
             }
-            return Vehicle != null ? Vehicle.name : "None";
+            if (Vehicle != null)
+            {
+                return "Vehicle " + Vehicle.name.Replace("(Clone)", "");
+            }
+            return "None";
         }
     }
 }
@@ -83,6 +87,11 @@ public sealed class TargetLock
     public LockTarget CurrentTarget { get; private set; }
 
     private float _nextEvaluateTime;
+
+    public float NextEvaluateIn()
+    {
+        return _nextEvaluateTime - Time.time;
+    }
 
     public void Tick()
     {
@@ -106,7 +115,8 @@ public sealed class TargetLock
 
         CurrentTarget = default(LockTarget);
 
-        if (Time.time < _nextEvaluateTime)
+        bool skipByTime = Time.time < _nextEvaluateTime;
+        if (skipByTime)
         {
             return;
         }
@@ -117,12 +127,7 @@ public sealed class TargetLock
 
     public static bool IsWithinFov(LockTarget target)
     {
-        Camera camera = SafeCamera.Get();
-        if (camera == null)
-        {
-            return false;
-        }
-        return PassesFilters(target, camera.transform.position, camera.transform.forward);
+        return PassesAnyCamera(target);
     }
 
     public float DistanceTo(LockTarget target)
@@ -137,29 +142,44 @@ public sealed class TargetLock
 
     private static bool IsStillEligible(LockTarget target)
     {
-        Camera camera = SafeCamera.Get();
-        if (camera == null)
-        {
-            return false;
-        }
+        return PassesAnyCamera(target);
+    }
 
-        return PassesFilters(target, camera.transform.position, camera.transform.forward);
+    // The managed resolver can return a stray camera (up-tilted "Camera" object
+    // seen bouncing in logs), so a target passes if ANY candidate camera's cone
+    // contains it. A wrong camera may only add locks, never veto them.
+    private static bool PassesAnyCamera(LockTarget candidate)
+    {
+        Camera camera = SafeCamera.Get();
+        if (camera != null && PassesFilters(candidate, camera.transform.position, camera.transform.forward))
+        {
+            return true;
+        }
+        camera = SafeCamera.GetMain();
+        return camera != null && PassesFilters(candidate, camera.transform.position, camera.transform.forward);
     }
 
     private static LockTarget FindBestTarget()
     {
-        Camera camera = SafeCamera.Get();
+        float bestScore = float.PositiveInfinity;
+        LockTarget best = default(LockTarget);
+
+        ScanWithCamera(SafeCamera.Get(), ref bestScore, ref best);
+        ScanWithCamera(SafeCamera.GetMain(), ref bestScore, ref best);
+
+        return best;
+    }
+
+    private static void ScanWithCamera(Camera camera, ref float bestScore, ref LockTarget best)
+    {
         if (camera == null)
         {
-            return default(LockTarget);
+            return;
         }
 
         Vector3 origin = camera.transform.position;
         Vector3 forward = camera.transform.forward;
         int playerTeam = ActorManager.instance.player.team;
-
-        float bestScore = float.PositiveInfinity;
-        LockTarget best = default(LockTarget);
 
         List<Actor> actors = ActorManager.instance.actors;
         for (int i = 0; i < actors.Count; i++)
@@ -182,8 +202,6 @@ public sealed class TargetLock
             }
             ScoreCandidate(LockTarget.FromVehicle(vehicle), origin, forward, ref bestScore, ref best);
         }
-
-        return best;
     }
 
     private static void ScoreCandidate(LockTarget candidate, Vector3 origin, Vector3 forward, ref float bestScore, ref LockTarget best)

@@ -41,6 +41,8 @@ namespace UnityEngine
             this.z = z;
         }
 
+        public string ToString(string format) { return null; }
+
         public static Vector3 zero { get { return default(Vector3); } }
 
         public float magnitude { get { return 0f; } }
@@ -186,8 +188,14 @@ namespace UnityEngine
     {
     }
 
-    public class Camera : Component
+    public class Behaviour : Component
     {
+        public bool enabled { get; set; }
+    }
+
+    public class Camera : Behaviour
+    {
+        public static Camera main { get { return null; } }
         public float fieldOfView { get { return 0f; } set { } }
         public Vector3 WorldToScreenPoint(Vector3 position) { return default(Vector3); }
     }

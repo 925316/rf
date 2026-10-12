@@ -103,3 +103,10 @@ public class GameManager : MonoBehaviour
     // decompiled 47914
     public static string GetPlayerName() { return null; }
 }
+
+// decompiled 68386: public static class LocalPlayer
+public static class LocalPlayer
+{
+    // decompiled 68400
+    public static Camera GetCurrentCameraIncludeSpectator() { return null; }
+}

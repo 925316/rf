@@ -8,13 +8,15 @@ public static class SpawnProjectilePatch
 {
     private static bool Prefix(Weapon __instance, ref Vector3 direction, Vector3 muzzlePosition)
     {
-        if (!ShouldSteer(__instance) || !TargetLock.Instance.CurrentTarget.IsValid)
+        if (!ShouldSteer(__instance))
         {
             return true;
         }
 
         LockTarget target = TargetLock.Instance.CurrentTarget;
-        if (!TargetLock.IsWithinFov(target))
+        bool valid = target.IsValid;
+        bool fov = valid && TargetLock.IsWithinFov(target);
+        if (!valid || !fov)
         {
             return true;
         }
