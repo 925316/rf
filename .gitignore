@@ -1,0 +1,14 @@
+# IDE
+.vs/
+.vscode/*
+!.vscode/launch.json
+.idea/
+.cache/
+
+# build output (all generated, never committed)
+Build/
+obj/
+bin/
+
+# fetched dependencies (download on demand via fetch-deps.ps1 / CI, never committed)
+lib/
