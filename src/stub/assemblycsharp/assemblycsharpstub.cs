@@ -99,4 +99,7 @@ public class GameManager : MonoBehaviour
 {
     // decompiled 45844
     public static Camera GetMainCamera() { return null; }
+
+    // decompiled 47914
+    public static string GetPlayerName() { return null; }
 }

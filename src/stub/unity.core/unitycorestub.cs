@@ -17,7 +17,7 @@ namespace UnityEngine
             this.y = y;
         }
 
-        public static readonly Vector2 right = new Vector2(1f, 0f);
+        public static Vector2 right { get { return default(Vector2); } }
 
         public float magnitude { get { return 0f; } }
 
@@ -41,7 +41,7 @@ namespace UnityEngine
             this.z = z;
         }
 
-        public static readonly Vector3 zero = default(Vector3);
+        public static Vector3 zero { get { return default(Vector3); } }
 
         public float magnitude { get { return 0f; } }
         public float sqrMagnitude { get { return 0f; } }
@@ -71,6 +71,7 @@ namespace UnityEngine
 
     public struct Matrix4x4
     {
+        public static Matrix4x4 identity { get { return default(Matrix4x4); } }
     }
 
     public struct Color
@@ -88,15 +89,16 @@ namespace UnityEngine
             this.a = a;
         }
 
-        public static readonly Color white = new Color(1f, 1f, 1f, 1f);
+        public static Color white { get { return default(Color); } }
     }
 
     public struct Rect
     {
-        public float x;
-        public float y;
-        public float width;
-        public float height;
+        // Properties in real Unity, not fields.
+        public float x { get; set; }
+        public float y { get; set; }
+        public float width { get; set; }
+        public float height { get; set; }
 
         public Rect(float x, float y, float width, float height)
         {

@@ -58,7 +58,7 @@ public struct LockTarget
     {
         get
         {
-            Camera camera = GameManager.GetMainCamera();
+            Camera camera = SafeCamera.Get();
             return camera != null ? camera.WorldToScreenPoint(AimPoint) : Vector3.zero;
         }
     }
@@ -117,7 +117,7 @@ public sealed class TargetLock
 
     public static bool IsWithinFov(LockTarget target)
     {
-        Camera camera = GameManager.GetMainCamera();
+        Camera camera = SafeCamera.Get();
         if (camera == null)
         {
             return false;
@@ -137,7 +137,7 @@ public sealed class TargetLock
 
     private static bool IsStillEligible(LockTarget target)
     {
-        Camera camera = GameManager.GetMainCamera();
+        Camera camera = SafeCamera.Get();
         if (camera == null)
         {
             return false;
@@ -148,7 +148,7 @@ public sealed class TargetLock
 
     private static LockTarget FindBestTarget()
     {
-        Camera camera = GameManager.GetMainCamera();
+        Camera camera = SafeCamera.Get();
         if (camera == null)
         {
             return default(LockTarget);

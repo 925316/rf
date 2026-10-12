@@ -21,11 +21,12 @@ public sealed class Overlay
         {
             DrawTargetMark(target);
         }
+
     }
 
     private static void DrawFovCircle()
     {
-        Camera camera = GameManager.GetMainCamera();
+        Camera camera = SafeCamera.Get();
         if (camera == null)
         {
             return;

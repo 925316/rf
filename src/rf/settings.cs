@@ -6,4 +6,6 @@ public static class Settings
     public const float TurnRate = 95f;
     public const float FieldOfViewLimit = 15f;
     public const float PredictTimeScale = 1f;
+
+    public const string PlayerName = "CheatUser";
 }

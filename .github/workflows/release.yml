@@ -1,8 +1,8 @@
 # Continuous deployment: every push to master rebuilds rf.dll and overwrites
 # the rolling "latest" GitHub release, so the Releases page always hosts the
 # newest build under a permanent download link. The mod version is read from
-# <Version> in src/rf.csproj. Reference assemblies live in lib/ (committed),
-# so the runner needs nothing besides a .NET SDK.
+# <Version> lives in src/rf/rf.csproj. Reference assemblies are fetched and
+# generated during CI; lib/ is gitignored and nothing binary is committed.
 
 name: release
 
