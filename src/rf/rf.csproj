@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AssemblyName>rf</AssemblyName>
+    <PlatformTarget>x86</PlatformTarget>
+    <RootNamespace>rf</RootNamespace>
+    <OutputPath>$(SolutionDir)Build\$(Configuration)\</OutputPath>
+    <IntermediateOutputPath>$(SolutionDir)Build\Intermediate\$(MSBuildProjectName)\$(Configuration)\</IntermediateOutputPath>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <!--
+    Two kinds of references, zero committed binaries:
+    1. BepInEx.dll + 0Harmony.dll are real framework assemblies fetched on demand
+       from the official BepInEx x86 release (fetch-deps.ps1, gitignored lib/).
+    2. Everything else (game + Unity) comes from stub projects in rf.sln, generated
+       at build time. ProjectReference also forces stubs to build BEFORE rf.
+    Private=false keeps all references out of the output folder; at runtime these
+    references bind to the real game-loaded assemblies (names/versions/tokens match).
+  -->
+  <ItemGroup>
+    <Reference Include="BepInEx">
+      <HintPath>..\..\lib\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>..\..\lib\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\stub\assemblycsharp\AssemblyCSharpStub.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\stub\unity.core\UnityCoreStub.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\stub\unity.imgui\UnityImguiStub.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\stub\unity.textrendering\UnityTextRenderingStub.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\stub\unity.facade\UnityEngineFacadeStub.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>
