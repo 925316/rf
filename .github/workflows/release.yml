@@ -1,0 +1,88 @@
+# Continuous deployment: every push to master rebuilds rf.dll and overwrites
+# the rolling "latest" GitHub release, so the Releases page always hosts the
+# newest build under a permanent download link. The mod version is read from
+# <Version> in src/rf.csproj. Reference assemblies live in lib/ (committed),
+# so the runner needs nothing besides a .NET SDK.
+
+name: release
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Fetch dependencies (official BepInEx x86 release)
+        shell: pwsh
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP 'bepinex-win-x86.zip'
+          Invoke-WebRequest -Uri 'https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.5/BepInEx_win_x86_5.4.23.5.zip' -OutFile $zip
+          New-Item -ItemType Directory lib -Force | Out-Null
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+          try {
+            foreach ($n in 'BepInEx/core/BepInEx.dll', 'BepInEx/core/0Harmony.dll') {
+              $e = $archive.Entries | Where-Object FullName -eq $n
+              if (-not $e) { throw "entry not found: $n" }
+              [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e, (Join-Path 'lib' ([System.IO.Path]::GetFileName($n))), $true)
+            }
+          } finally { $archive.Dispose() }
+          Get-ChildItem lib | Format-Table Name, Length
+
+      - name: Build
+        run: dotnet build rf.sln -c Release
+
+      - name: Package
+        id: package
+        shell: pwsh
+        run: |
+          $line = (Get-Content src/rf/rf.csproj | Select-String -Pattern '<Version>').Line
+          $version = [regex]::Match($line, '<Version>([^<]+)</Version>').Groups[1].Value
+          if (-not $version) {
+            Write-Error "Could not read <Version> from src/rf/rf.csproj"
+            exit 1
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+          New-Item -ItemType Directory dist -Force | Out-Null
+          Set-Content dist/install.txt -Value "rf $version (Ravenfield BepInEx aimbot)`nInstall: copy rf.dll into BepInEx\plugins\rf\ inside your Ravenfield folder, then restart the game.`nRequires: BepInEx 5, x86 build (32-bit game)."
+          Compress-Archive -Path "Build/Release/rf.dll", "dist/install.txt" -DestinationPath dist/rf.zip -Force
+          $hash = (Get-FileHash dist/rf.zip -Algorithm SHA256).Hash.ToLower()
+          "sha256=$hash" >> $env:GITHUB_OUTPUT
+
+      - name: Publish versioned release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.package.outputs.version }}
+        shell: pwsh
+        run: |
+          $asset = "dist/rf.zip"
+          $commit = "${{ github.sha }}".Substring(0, 7)
+          $tag = "v$env:VERSION"
+          $title = "rf $tag"
+          $notes = "Built from commit $commit`nSHA256: ${{ steps.package.outputs.sha256 }}"
+          gh release upload $tag $asset --clobber
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag $asset --title $title --target ${{ github.sha }} --notes $notes
+          } else {
+            gh release edit $tag --title $title --notes $notes
+          }
+          gh api -X DELETE repos/${{ github.repository }}/git/refs/tags/$tag
+          gh api -X POST repos/${{ github.repository }}/git/refs -f ref="refs/tags/$tag" -f sha="${{ github.sha }}"
+          gh release edit $tag --draft=false
